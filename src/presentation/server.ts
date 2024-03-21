@@ -18,6 +18,8 @@ export class Server {
   }
 
   async start() {
+    this.app.use(express.json());
+
     this.app.use(this.router);
 
     this.app.listen(this.port, () => {
