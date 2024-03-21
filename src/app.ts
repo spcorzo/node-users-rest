@@ -1,4 +1,5 @@
 import { envs } from "./config";
+import { AppRoutes } from "./presentation/routes";
 import { Server } from "./presentation/server";
 
 (() => {
@@ -6,9 +7,8 @@ import { Server } from "./presentation/server";
 })();
 
 async function main() {
-  // DB initialization
-  // Start server
   new Server({
     port: envs.PORT,
+    router: AppRoutes.routes,
   }).start();
 }
