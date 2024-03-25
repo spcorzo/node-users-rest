@@ -1,15 +1,37 @@
+import { BcryptAdapter } from "../../config";
+import { UserModel } from "../../data/mongodb";
 import { AuthDataSource } from "../../domain/datasources";
 import { RegisterUserDto } from "../../domain/dtos";
 import { User } from "../../domain/entities";
 import { CustomError } from "../../domain/errors";
 
+type HashFunction = (password: string) => string;
+type CompareFunction = (plainPassword: string, hashedPassword: string) => boolean;
+
 export class AuthDatasourceImplementation implements AuthDataSource {
+    constructor(
+        private readonly hashPassword: HashFunction = BcryptAdapter.hash,
+        private readonly comparePassword: CompareFunction = BcryptAdapter.compareHash,
+    ) {}
 
     async register(registerUserDto: RegisterUserDto): Promise<User> {
         const {name, email, password} = registerUserDto;
 
         try {
-            return new User("1", name, email, password, ["ROLE_USER"]);
+            const emailExists = await UserModel.findOne({email});
+            if (emailExists) throw CustomError.badRequest("User already exists");
+            
+            const passwordHashed = this.hashPassword(password);
+
+            const user = await UserModel.create({
+                name,
+                email,
+                password: passwordHashed
+            });
+
+            await user.save(); 
+            // TODO: Implement mapper            
+            return new User(user.id, name, email, user.password, user.roles);
         } catch (error) {
             if (error instanceof Error) {
                 throw error;
